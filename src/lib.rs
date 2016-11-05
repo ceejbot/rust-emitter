@@ -1,20 +1,67 @@
 extern crate libc;
-extern crate rustc_serialize;
+extern crate serde;
+extern crate serde_json;
 extern crate url;
 
 use libc::gethostname;
-use rustc_serialize::Encodable;
-use rustc_serialize::json;
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 
-// struct Emitter
-// make one, with defaults & destination
-// register it as a global somehow
-// determine hostname
-// func to emit a metric, fill out with defaults
-// reconnect on error
+pub fn create<'e>(tmpl: BTreeMap<&'e str, String>, dest: &str) -> Emitter<'e>
+{
+    let mut defaults = tmpl.clone();
+    let hostname = hostname();
+    defaults.insert("host", hostname);
+
+    let conn = create_connection(dest);
+
+    Emitter
+    {
+        defaults: defaults,
+        socket: conn.unwrap(),
+    }
+}
+
+fn create_connection(dest: &str) -> Result<std::net::TcpStream, std::io::Error>
+{
+    // TODO udp vs tcp for full compatibility
+    let target = url::Url::parse(dest).ok().unwrap();
+    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
+}
+
+pub struct Emitter<'e>
+{
+    defaults: BTreeMap<&'e str, String>,
+    socket: TcpStream,
+}
+
+impl<'e> Emitter<'e>
+{
+    // static
+    fn set_global(g: Emitter) -> bool
+    {
+        // TODO implement
+        // register the emitter somehow
+        false
+    }
+
+    // static
+    fn emit_metric(mut point: BTreeMap<&'e str, std::string::String>)
+    {
+        // TODO implement
+        // emit on the global
+    }
+
+    fn emit(&mut self, mut point: BTreeMap<&'e str, std::string::String>)
+    {
+        let mut metric = self.defaults.clone();
+        metric.append(&mut point);
+        let output = serde_json::to_string(&metric).unwrap();
+        // then emit that encoded version
+        let _ = self.socket.write(output.as_bytes());
+    }
+}
 
 pub fn hostname<'a>() -> std::string::String
 {
@@ -47,58 +94,6 @@ pub fn hostname<'a>() -> std::string::String
 
     unsafe { buf.set_len(len); }
     String::from_utf8_lossy(buf.as_slice()).into_owned()
-}
-
-pub fn create<'e>(tmpl: BTreeMap<&'e str, String>, dest: &str) -> Emitter<'e>
-{
-    let conn = create_connection(dest);
-    let mut defaults = tmpl.clone();
-    let hostname = hostname();
-    defaults.insert("host", hostname);
-
-    Emitter
-    {
-        defaults: defaults,
-        socket: conn.unwrap(),
-    }
-}
-
-fn create_connection(dest: &str) -> Result<std::net::TcpStream, std::io::Error>
-{
-    // TODO udp vs tcp for full compatibility
-    let target = url::Url::parse(dest).ok().unwrap();
-    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
-}
-
-pub struct Emitter<'e>
-{
-    defaults: BTreeMap<&'e str, String>,
-    socket: TcpStream,
-}
-
-impl<'e> Emitter<'e>
-{
-    // static
-    fn set_global(g: Emitter) -> bool
-    {
-        // register the emitter somehow
-        false
-    }
-
-    // static
-    fn emit_metric<'a>(point: BTreeMap<&'a str, &'a str>)
-    {
-        // emit on the global
-    }
-
-    fn emit<'a>(&self, point: BTreeMap<&'a str, &'a str>)
-    {
-        let mut metric = point.clone();
-        // fill out from defaults
-        metric.insert("name", "stripe-receiver");
-        json::encode(&metric);
-        // then emit that encoded version
-    }
 }
 
 #[cfg(test)]
