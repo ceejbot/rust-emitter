@@ -6,3 +6,4 @@ authors = ["C J Silverio <ceejceej@gmail.com>"]
 [dependencies]
 rustc-serialize = "0.3.19"
 libc = "0.2.17"
+url = "~1.2.3"

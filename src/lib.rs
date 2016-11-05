@@ -1,5 +1,6 @@
-extern crate rustc_serialize;
 extern crate libc;
+extern crate rustc_serialize;
+extern crate url;
 
 use libc::gethostname;
 use rustc_serialize::Encodable;
@@ -15,7 +16,7 @@ use std::net::TcpStream;
 // func to emit a metric, fill out with defaults
 // reconnect on error
 
-pub fn hostname() -> std::string::String
+pub fn hostname<'a>() -> std::string::String
 {
     let bufsize = 255;
     let mut buf = Vec::<u8>::with_capacity(bufsize);
@@ -48,53 +49,57 @@ pub fn hostname() -> std::string::String
     String::from_utf8_lossy(buf.as_slice()).into_owned()
 }
 
-/*
-pub struct Emitter
+pub fn create<'e>(tmpl: BTreeMap<&'e str, String>, dest: &str) -> Emitter<'e>
 {
-    defaults: BTreeMap,
-    destination: String, // actually TcpStream
+    let conn = create_connection(dest);
+    let mut defaults = tmpl.clone();
+    let hostname = hostname();
+    defaults.insert("host", hostname);
+
+    Emitter
+    {
+        defaults: defaults,
+        socket: conn.unwrap(),
+    }
 }
 
-impl Emitter
+fn create_connection(dest: &str) -> Result<std::net::TcpStream, std::io::Error>
+{
+    // TODO udp vs tcp for full compatibility
+    let target = url::Url::parse(dest).ok().unwrap();
+    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
+}
+
+pub struct Emitter<'e>
+{
+    defaults: BTreeMap<&'e str, String>,
+    socket: TcpStream,
+}
+
+impl<'e> Emitter<'e>
 {
     // static
-    fn set_global(g: Emitter)
+    fn set_global(g: Emitter) -> bool
     {
         // register the emitter somehow
+        false
     }
 
     // static
-    fn emit_metric(point: BTreeMap) -> Result
+    fn emit_metric<'a>(point: BTreeMap<&'a str, &'a str>)
     {
         // emit on the global
     }
 
-    // static
-    fn new(defaults: BTreeMap) -> Emitter
-    {
-        // store defaults
-    }
-
-    fn emit(&self, point: BTreeMap) -> Result
+    fn emit<'a>(&self, point: BTreeMap<&'a str, &'a str>)
     {
         let mut metric = point.clone();
         // fill out from defaults
         metric.insert("name", "stripe-receiver");
-        json::encode(metric);
+        json::encode(&metric);
         // then emit that encoded version
     }
-
-    fn open(&self) -> Result
-    {
-        let mut stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-
-        // ignore the Result
-        let _ = stream.write(&[1]);
-        let _ = stream.read(&mut [0; 128]); // ignore here too
-
-    }
 }
-*/
 
 #[cfg(test)]
 mod tests {
