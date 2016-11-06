@@ -1,8 +1,10 @@
+extern crate chrono;
 extern crate libc;
 extern crate serde;
 extern crate serde_json;
 extern crate url;
 
+use chrono::*;
 use libc::gethostname;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -56,36 +58,46 @@ impl<'e> Emitter<'e>
     }
     */
 
+    fn write(&mut self, metric: BTreeMap<&'e str, Value>)
+    {
+        let output = serde_json::to_string(&metric).unwrap() + "\n";
+        match self.output.write_all(output.as_bytes())
+        {
+            Ok(_) => {},
+            Err(e) => println!("{:?}", e),
+        }
+    }
+
     pub fn emit(&mut self, mut point: BTreeMap<&'e str, Value>)
     {
         let mut metric = self.defaults.clone();
         metric.append(&mut point);
         metric.entry("value").or_insert(serde_json::to_value(1));
-        // TODO add timestamp in ms
+        metric.entry("time").or_insert(serde_json::to_value(1));
+
+        let utc: DateTime<UTC> = UTC::now();
 
         self.write(metric);
     }
 
-    fn write(&mut self, metric: BTreeMap<&'e str, Value>)
+    pub fn emit_name(&mut self, name: &'e str)
     {
-        let output = serde_json::to_string(&metric).unwrap();
-        println!("{}", output);
-        // fire and forget, buddy
-        let result = self.output.write(output.as_bytes());
-        println!("bytes written: {}", result.unwrap());
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        self.emit(metric);
     }
 
     pub fn emit_float(&mut self, name: &'e str, value: f32)
     {
-        let mut metric = self.defaults.clone();
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
-        self.write(metric);
+        self.emit(metric);
     }
 
     pub fn emit_int(&mut self, name: &'e str, value: i32)
     {
-        let mut metric = self.defaults.clone();
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         self.write(metric);
@@ -93,7 +105,8 @@ impl<'e> Emitter<'e>
 
     pub fn close(&mut self)
     {
-        let _ = self.output.flush();
+        let err = self.output.flush();
+        println!("close: {:?}", err);
     }
 }
 

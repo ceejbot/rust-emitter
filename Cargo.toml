@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["C J Silverio <ceejceej@gmail.com>"]
 
 [dependencies]
+chrono = "0.2"
 libc = "0.2.17"
 serde = "0.8"
 serde_json = "0.8"
