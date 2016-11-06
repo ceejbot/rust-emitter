@@ -1,10 +1,9 @@
-extern crate chrono;
 extern crate libc;
 extern crate serde;
 extern crate serde_json;
+extern crate time;
 extern crate url;
 
-use chrono::*;
 use libc::gethostname;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -73,9 +72,10 @@ impl<'e> Emitter<'e>
         let mut metric = self.defaults.clone();
         metric.append(&mut point);
         metric.entry("value").or_insert(serde_json::to_value(1));
-        metric.entry("time").or_insert(serde_json::to_value(1));
 
-        let utc: DateTime<UTC> = UTC::now();
+        let now = time::get_time();
+        let millis = now.sec * 1000 + (now.nsec / 1000000) as i64;
+        metric.entry("time").or_insert(serde_json::to_value(millis));
 
         self.write(metric);
     }
