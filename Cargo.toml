@@ -2,6 +2,11 @@
 name = "numbat"
 version = "0.1.0"
 authors = ["C J Silverio <ceejceej@gmail.com>"]
+description = "An emitter for npm's numbat-metrics for Rust projects."
+homepage = "https://github.com/numbat/rust-emitter"
+repository = "https://github.com/numbat/rust-emitter"
+license = "ISC"
+readme = "README.md"
 
 [dependencies]
 libc = "0.2.17"
