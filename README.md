@@ -50,6 +50,8 @@ Shortcut for emitting a metric with the given name and integer value.
 
 There's no concept of a global emitter as in the javascript implementation, so for the moment you must pass the emitter object around. There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it. There's no UDP emitter implementation (just use TCP like you should anyway).
 
+If you don't pass `app` in your defaults or `name` in a point you'll crash instead of doing anything useful.
+
 ## License
 
 ISC
