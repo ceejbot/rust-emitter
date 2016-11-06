@@ -10,21 +10,6 @@ use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 
-pub fn create<'e>(tmpl: BTreeMap<&'e str, Value>, dest: &str) -> Emitter<'e>
-{
-    let mut defaults = tmpl.clone();
-    let hostname = hostname();
-    defaults.insert("host", serde_json::to_value(hostname));
-
-    let conn = create_connection(dest);
-
-    Emitter
-    {
-        defaults: defaults,
-        output: conn.unwrap(),
-    }
-}
-
 fn create_connection(dest: &str) -> Result<std::net::TcpStream, std::io::Error>
 {
     // TODO udp vs tcp for full compatibility
@@ -36,26 +21,30 @@ pub struct Emitter<'e>
 {
     defaults: BTreeMap<&'e str, Value>,
     output: TcpStream,
+    app: String,
 }
 
 impl<'e> Emitter<'e>
 {
-    /*
-    // static
-    pub fn set_global(g: Emitter) -> bool
+    pub fn new(tmpl: BTreeMap<&'e str, Value>, dest: &str) -> Emitter<'e>
     {
-        // TODO implement
-        // register the emitter somehow
-        false
-    }
+        let conn = create_connection(dest);
 
-    // static
-    pub fn emit_metric(mut point: BTreeMap<String, Value>)
-    {
-        // TODO implement
-        // emit on the global
+        let mut defaults = tmpl.clone();
+        let hostname = hostname();
+        defaults.insert("host", serde_json::to_value(hostname));
+
+        let t = defaults.remove("app").unwrap();
+        let mut app = String::from(t.as_str().unwrap_or("RUST"));
+        app.push('.');
+
+        Emitter
+        {
+            defaults: defaults,
+            output: conn.unwrap(),
+            app: app,
+        }
     }
-    */
 
     fn write(&mut self, metric: BTreeMap<&'e str, Value>)
     {
@@ -67,10 +56,17 @@ impl<'e> Emitter<'e>
         }
     }
 
-    pub fn emit(&mut self, mut point: BTreeMap<&'e str, Value>)
+    pub fn emit(&mut self, point: BTreeMap<&'e str, Value>)
     {
         let mut metric = self.defaults.clone();
-        metric.append(&mut point);
+        metric.append(&mut point.clone());
+
+        // this will fail if you forget to set a name
+        let name = metric.remove("name").unwrap();
+        let mut fullname = self.app.clone();
+        fullname.push_str(name.as_str().unwrap());
+
+        metric.insert("name", serde_json::to_value(fullname));
         metric.entry("value").or_insert(serde_json::to_value(1));
 
         let now = time::get_time();
@@ -100,13 +96,12 @@ impl<'e> Emitter<'e>
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
-        self.write(metric);
+        self.emit(metric);
     }
 
     pub fn close(&mut self)
     {
-        let err = self.output.flush();
-        println!("close: {:?}", err);
+        let _ = self.output.flush();
     }
 }
 

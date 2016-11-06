@@ -6,7 +6,7 @@ An emitter for [numbat metrics](https://github.com/numbat-metrics/) for Rust pro
 
 Here's an example of using the emitter:
 
-```rs
+```rust
 extern crate numbat;
 extern crate serde_json;
 
@@ -48,7 +48,7 @@ Shortcut for emitting a metric with the given name and integer value.
 
 ## TODO
 
-There's no concept of a global emitter as in the javascript implementation, so for the moment you must pass the emitter object around. There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it.
+There's no concept of a global emitter as in the javascript implementation, so for the moment you must pass the emitter object around. There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it. There's no UDP emitter implementation (just use TCP like you should anyway).
 
 ## License
 

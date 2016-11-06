@@ -9,8 +9,8 @@ fn main()
     println!("found the hostname: {}", numbat::hostname());
 
     let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
-    opts.insert("app", serde_json::to_value("test"));
-    let mut emitter = numbat::create(opts, "tcp://localhost:4677");
+    opts.insert("app", serde_json::to_value("rust"));
+    let mut emitter = numbat::Emitter::new(opts, "tcp://localhost:4677");
 
     emitter.emit_name("start");
     emitter.emit_float("floating", 232.5);
