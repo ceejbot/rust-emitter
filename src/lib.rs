@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 extern crate serde;
 extern crate serde_json;
@@ -9,50 +11,92 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
+use std::sync::Mutex;
 
-fn create_connection(dest: &str) -> Result<std::net::TcpStream, std::io::Error>
+lazy_static! {
+    pub static ref EMITTER: Mutex<Emitter<'static>> = Mutex::new(Emitter::empty());
+}
+
+pub fn emitter() -> std::sync::MutexGuard<'static, Emitter<'static>>
 {
-    // TODO udp vs tcp for full compatibility
-    let target = url::Url::parse(dest).ok().unwrap();
-    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
+    EMITTER.lock().unwrap()
 }
 
 pub struct Emitter<'e>
 {
     defaults: BTreeMap<&'e str, Value>,
-    output: TcpStream,
+    output: Option<TcpStream>,
+    destination: String,
     app: String,
 }
 
 impl<'e> Emitter<'e>
 {
-    pub fn new(tmpl: BTreeMap<&'e str, Value>, dest: &str) -> Emitter<'e>
+    pub fn empty() -> Emitter<'e>
     {
-        let conn = create_connection(dest);
+        let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
+        let hostname = hostname();
+        opts.insert("host", serde_json::to_value(hostname));
+        Emitter
+        {
+            defaults: opts,
+            output: None,
+            app: String::from(""),
+            destination: String::from("")
+        }
+    }
 
+    pub fn init(&mut self, tmpl: BTreeMap<&'e str, Value>, app: &str)
+    {
         let mut defaults = tmpl.clone();
         let hostname = hostname();
         defaults.insert("host", serde_json::to_value(hostname));
 
-        let t = defaults.remove("app").unwrap();
-        let mut app = String::from(t.as_str().unwrap_or("RUST"));
-        app.push('.');
+        let mut t = String::from(app);
+        t.push('.');
+
+        self.defaults = defaults;
+        self.app = t;
+    }
+
+    pub fn new(tmpl: BTreeMap<&'e str, Value>, app: &str) -> Emitter<'e>
+    {
+        let mut defaults = tmpl.clone();
+        let hostname = hostname();
+        defaults.insert("host", serde_json::to_value(hostname));
+
+        let mut t = String::from(app);
+        t.push('.');
 
         Emitter
         {
             defaults: defaults,
-            output: conn.unwrap(),
-            app: app,
+            output: None,
+            app: t,
+            destination: String::from("")
         }
+    }
+
+    pub fn connect(&mut self, dest: &str)
+    {
+        self.destination = String::from(dest);
+        self.output = create_connection(dest);
     }
 
     fn write(&mut self, metric: BTreeMap<&'e str, Value>)
     {
-        let output = serde_json::to_string(&metric).unwrap() + "\n";
-        match self.output.write_all(output.as_bytes())
+        match self.output
         {
-            Ok(_) => {},
-            Err(e) => println!("{:?}", e),
+            None => {},
+            Some(ref mut conn) =>
+            {
+                let mline = serde_json::to_string(&metric).unwrap() + "\n";
+                match conn.write_all(mline.as_bytes())
+                {
+                    Ok(_) => {},
+                    Err(e) => println!("{:?}", e),
+                }
+            }
         }
     }
 
@@ -98,10 +142,16 @@ impl<'e> Emitter<'e>
         metric.insert("value", serde_json::to_value(value));
         self.emit(metric);
     }
+}
 
-    pub fn close(&mut self)
+fn create_connection(dest: &str) -> Option<std::net::TcpStream>
+{
+    // TODO udp vs tcp for full compatibility
+    let target = url::Url::parse(dest).ok().unwrap();
+    match TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
     {
-        let _ = self.output.flush();
+        Ok(v) => { Some(v) },
+        Err(_) => { None },
     }
 }
 
