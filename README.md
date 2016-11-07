@@ -33,7 +33,6 @@ emitter.emit(point);
 However, it might be a giant pain to pass an emitter object around. If you need only one, connected to only one numbat collector, you can use the singleton:
 
 ```rust
-// Now initialize & use the global emitter.
 let mut defaults: BTreeMap<&str, Value> = BTreeMap::new();
 defaults.insert("tag", serde_json::to_value("global"));
 
@@ -54,7 +53,7 @@ Takes a map with defaults to use for *all* emitted metrics (can be empty), and t
 
 `emitter.connect(uri: &str)`
 
-You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this for the moment.
+You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this.
 
 `emitter.emit(mut BTreeMap<&str, serde_json::Value>)`
 
@@ -81,6 +80,8 @@ Shortcut for emitting a metric with a value larger than anything javascript's li
 There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it other than the little program in `main.rs`. There's no UDP emitter implementation (just use TCP like you should anyway).
 
 If you don't pass `name` in a point map you'll crash instead of doing anything useful.
+
+The API for creating a point with custom fields could be nicer; would be great to hide the choice of `serde_json` from consumers.
 
 ## License
 
