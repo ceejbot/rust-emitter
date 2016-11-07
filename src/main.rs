@@ -9,7 +9,7 @@ fn main()
 {
     println!("found the hostname: {}", numbat::hostname());
 
-    // Create a local emmitter & use it.
+    // Create a local emitter & use it.
     let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
     opts.insert("tag", serde_json::to_value("local"));
 

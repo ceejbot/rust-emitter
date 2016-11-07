@@ -14,8 +14,10 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
-opts.insert("app", serde_json::to_value("test"));
-let mut emitter = numbat::create(opts, "tcp://localhost:4677");
+opts.insert("tag", serde_json::to_value("local"));
+
+let mut emitter = numbat::Emitter::new(opts, "test-emitter");
+emitter.connect("tcp://localhost:4677");
 
 emitter.emit_name("start");
 emitter.emit_float("floating", 232.5);
@@ -28,7 +30,31 @@ point.insert("value", serde_json::to_value(500.3));
 emitter.emit(point);
 ```
 
+However, it might be a giant pain to pass an emitter object around. If you need only one, connected to only one numbat collector, you can use the singleton:
+
+```rust
+// Now initialize & use the global emitter.
+let mut defaults: BTreeMap<&str, Value> = BTreeMap::new();
+defaults.insert("tag", serde_json::to_value("global"));
+
+numbat::emitter().init(defaults, "global-emitter");
+numbat::emitter().connect("tcp://localhost:4677");
+numbat::emitter().emit_name("start");
+```
+
 ## API
+
+`numbat::emitter()`
+
+Get the singleton emitter for use with any of the below functions (aside from `new()`).
+
+`numbat::Emitter::new(tmpl: BTreeMap<&'e str, Value>, app: &str)`
+
+Takes a map with defaults to use for *all* emitted metrics (can be empty), and the name of the app. The name of the app *will* be used as a prefix for all emitted metrics. E.g., if your app is named `tiger` and you emit a metric named `bite`, it'll be sent to the collector as `tiger.bite`.
+
+`emitter.connect(uri: &str)`
+
+You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this for the moment.
 
 `emitter.emit(mut BTreeMap<&str, serde_json::Value>)`
 
@@ -46,11 +72,15 @@ Shortcut for emitting a metric with the given name and floating-point value.
 
 Shortcut for emitting a metric with the given name and integer value.
 
+`emitter.emit_int64(&str, i64)`
+
+Shortcut for emitting a metric with a value larger than anything javascript's little mind can handle.
+
 ## TODO
 
-There's no concept of a global emitter as in the javascript implementation, so for the moment you must pass the emitter object around. There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it. There's no UDP emitter implementation (just use TCP like you should anyway).
+There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it other than the little program in `main.rs`. There's no UDP emitter implementation (just use TCP like you should anyway).
 
-If you don't pass `app` in your defaults or `name` in a point you'll crash instead of doing anything useful.
+If you don't pass `name` in a point map you'll crash instead of doing anything useful.
 
 ## License
 
