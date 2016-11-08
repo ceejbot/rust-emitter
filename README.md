@@ -52,19 +52,19 @@ Get the singleton emitter for use with any of the below functions (aside from `n
 
 Takes a map with defaults to use for *all* emitted metrics (can be empty), and the name of the app. The name of the app *will* be used as a prefix for all emitted metrics. E.g., if your app is named `tiger` and you emit a metric named `bite`, it'll be sent to the collector as `tiger.bite`.
 
-`emitter.connect(uri: &str)`
+`connect(uri: &str)`
 
 You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this.
 
-`emitter.emit(mut BTreeMap<&str, serde_json::Value>)`
+`emit(mut BTreeMap<&str, serde_json::Value>)`
 
 Emit a full numbat metric, with as many tags as you wish. The `time` and `value` fields will be filled in if you do not provide them. Behaves like the [javascript numbat emitter](https://github.com/numbat-metrics/numbat-emitter#events). (If it doesn't, that's a bug!)
 
-`emitter.emit_name(&str)`
+`emit_name(&str)`
 
 Shortcut for emitting a metric with value 1.
 
-`emitter.emit_float(&str, f32)`
+`emit_float(&str, f32)`
 
 Shortcut for emitting a metric with the given name and floating-point value.
 
@@ -74,6 +74,14 @@ Shortcut for emitting a metric with the given name and floating-point value.
 `emit_unsigned16(&mut self, name: &'e str, value: u16)`
 
 Shortcuts for emitting a metric with the given name and integer value, with various signedness & size.
+
+`emit_name_val_tag(name: &'e str, value: u32, tag: &'e str, tagv: &'e str)`
+
+Shortcut for another common pattern: a name/value pair with a tag/value pair (both strings). Here's an example of emitting a metric for an http response, with timing & status code:
+
+`emit_name_val_tag("response", 23, "status", "200");`
+
+Emit a metric
 
 ## TODO
 

@@ -33,4 +33,5 @@ fn main()
     emitter().init(opts2, "numbat-emitter");
     emitter().connect("tcp://localhost:4677");
     emitter().emit_name("initialization");
+    emitter().emit_name_val_tag("response", 23, "status", "200");
 }
