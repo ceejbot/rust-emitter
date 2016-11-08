@@ -79,7 +79,9 @@ Shortcuts for emitting a metric with the given name and integer value, with vari
 
 Shortcut for another common pattern: a name/value pair with a tag/value pair (both strings). Here's an example of emitting a metric for an http response, with timing & status code:
 
-`emit_name_val_tag("response", 23, "status", "200");`
+`emit_name_int_tag_uint(name: &'e str, value: u32, tag: &'e str, tagv: &'e str)`
+
+`emit_name_val_tag("response", 23, "status", 200);`
 
 Emit a metric
 

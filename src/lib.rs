@@ -136,6 +136,15 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
+    pub fn emit_name_int_tag_uint(&mut self, name: &'e str, value: i64, tag: &'e str, tagv: u16)
+    {
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        metric.insert("value", serde_json::to_value(value));
+        metric.insert(tag, serde_json::to_value(tagv));
+        self.emit(metric);
+    }
+
     pub fn emit_float(&mut self, name: &'e str, value: f32)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
