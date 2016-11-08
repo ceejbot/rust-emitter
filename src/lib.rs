@@ -150,6 +150,16 @@ impl<'e> Emitter<'e>
         metric.insert("value", serde_json::to_value(value));
         self.emit(metric);
     }
+
+    pub fn emit_unsigned(&mut self, name: &'e str, value: u32)
+    {
+        self.emit_int64(name, value as i64);
+    }
+
+    pub fn emit_unsigned16(&mut self, name: &'e str, value: u16)
+    {
+        self.emit_int(name, value as i32);
+    }
 }
 
 fn create_connection(dest: &str) -> Option<std::net::TcpStream>

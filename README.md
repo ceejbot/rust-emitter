@@ -22,6 +22,7 @@ emitter.connect("tcp://localhost:4677");
 emitter.emit_name("start");
 emitter.emit_float("floating", 232.5);
 emitter.emit_int("integer", 2048);
+emitter.emit_unsigned("u16", 2048);
 
 let mut point: BTreeMap<&str, Value> = BTreeMap::new();
 point.insert("name", serde_json::to_value("inconvenience"));
@@ -67,13 +68,12 @@ Shortcut for emitting a metric with value 1.
 
 Shortcut for emitting a metric with the given name and floating-point value.
 
-`emitter.emit_int(&str, i32)`
+`emit_int(&str, i32)`  
+`emit_int64(&mut self, name: &'e str, value: i64)`  
+`emit_unsigned(&mut self, name: &'e str, value: u32)`  
+`emit_unsigned16(&mut self, name: &'e str, value: u16)`
 
-Shortcut for emitting a metric with the given name and integer value.
-
-`emitter.emit_int64(&str, i64)`
-
-Shortcut for emitting a metric with a value larger than anything javascript's little mind can handle.
+Shortcuts for emitting a metric with the given name and integer value, with various signedness & size.
 
 ## TODO
 
