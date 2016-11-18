@@ -22,9 +22,11 @@ pub fn emitter() -> std::sync::MutexGuard<'static, Emitter<'static>>
     EMITTER.lock().unwrap()
 }
 
+pub type Point<'a> = BTreeMap<&'a str, serde_json::Value>;
+
 pub struct Emitter<'e>
 {
-    defaults: BTreeMap<&'e str, Value>,
+    defaults: Point<'e>,
     output: Option<TcpStream>,
     destination: String,
     app: String,
@@ -34,7 +36,7 @@ impl<'e> Emitter<'e>
 {
     pub fn empty() -> Emitter<'e>
     {
-        let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut opts: Point = Point::new();
         let hostname = hostname();
         opts.insert("host", serde_json::to_value(hostname));
         Emitter
