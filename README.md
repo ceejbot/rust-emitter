@@ -10,10 +10,9 @@ Here's an example of using the emitter:
 extern crate numbat;
 extern crate serde_json;
 
-use serde_json::Value;
-use std::collections::BTreeMap;
+use numbat::Point;
 
-let mut opts: BTreeMap<&str, Value> = BTreeMap::new();
+let mut opts: Point = Point::new();
 opts.insert("tag", serde_json::to_value("local"));
 
 let mut emitter = numbat::Emitter::new(opts, "test-emitter");
@@ -24,7 +23,7 @@ emitter.emit_float("floating", 232.5);
 emitter.emit_int("integer", 2048);
 emitter.emit_unsigned("u16", 2048);
 
-let mut point: BTreeMap<&str, Value> = BTreeMap::new();
+let mut point: Point = Point::new();
 point.insert("name", serde_json::to_value("inconvenience"));
 point.insert("tag", serde_json::to_value("subjective"));
 point.insert("value", serde_json::to_value(500.3));
@@ -34,8 +33,13 @@ emitter.emit(point);
 However, it might be a giant pain to pass an emitter object around. If you need only one, connected to only one numbat collector, you can use the singleton:
 
 ```rust
-let mut defaults: BTreeMap<&str, Value> = BTreeMap::new();
-defaults.insert("tag", serde_json::to_value("global"));
+extern crate numbat;
+extern crate serde_json;
+
+use numbat::Point;
+
+let mut defaults: Point = Point::new();
+defaults.insert("using_emitter", serde_json::to_value("global"));
 
 numbat::emitter().init(defaults, "global-emitter");
 numbat::emitter().connect("tcp://localhost:4677");
@@ -44,19 +48,27 @@ numbat::emitter().emit_name("start");
 
 ## API
 
+### Re-exports
+
+Numbat points are BTreeMaps:
+
+`pub type Point<'a> = BTreeMap<&'a str, serde_json::Value>`
+
+### Functions
+
 `numbat::emitter()`
 
 Get the singleton emitter for use with any of the below functions (aside from `new()`).
 
-`numbat::Emitter::new(tmpl: BTreeMap<&'e str, Value>, app: &str)`
+`numbat::Emitter::new(tmpl: Point, app: &str)`
 
-Takes a map with defaults to use for *all* emitted metrics (can be empty), and the name of the app. The name of the app *will* be used as a prefix for all emitted metrics. E.g., if your app is named `tiger` and you emit a metric named `bite`, it'll be sent to the collector as `tiger.bite`.
+Takes a template point with defaults to use for *all* emitted metrics (can be empty), and the name of the app. The name of the app *will* be used as a prefix for all emitted metrics. E.g., if your app is named `tiger` and you emit a metric with name field `bite`, it'll be sent to the collector as `tiger.bite`.
 
 `connect(uri: &str)`
 
-You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this.
+You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this library.
 
-`emit(mut BTreeMap<&str, serde_json::Value>)`
+`emit(mut Point)`
 
 Emit a full numbat metric, with as many tags as you wish. The `time` and `value` fields will be filled in if you do not provide them. Behaves like the [javascript numbat emitter](https://github.com/numbat-metrics/numbat-emitter#events). (If it doesn't, that's a bug!)
 
