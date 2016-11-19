@@ -87,11 +87,11 @@ impl<'e> Emitter<'e>
         self.output = create_connection(dest);
     }
 
+    // The default write_all implemenation doesn't do useful things.
     fn write_all(conn: &mut TcpStream, mut buf: &[u8]) -> Result<usize, io::Error>
     {
-        let total = buf.len();
+        // let total = buf.len();
         let mut written: usize = 0;
-
         while !buf.is_empty()
         {
             match conn.write(buf)

@@ -1,6 +1,9 @@
-# numbat-emitter-rust
+# numbat rust-emitter
 
 An emitter for [numbat metrics](https://github.com/numbat-metrics/) for Rust projects.
+
+[![crate](https://img.shields.io/crates/v/numbat.svg)](https://crates.io/crates/numbat)
+
 
 ## Usage
 
@@ -99,11 +102,11 @@ Emit a metric
 
 ## TODO
 
-There's no error handling to speak of yet. It doesn't try to reconnect. I have no idea how to test it other than the little program in `main.rs`. There's no UDP emitter implementation (just use TCP like you should anyway).
+There's no error handling to speak of yet. It won't crash on errors, but it doesn't try to reconnect if it loses a connection. (I'm slowly untangling if/when the Rust TCPStream implementation bubbles errors up.)
 
-If you don't pass `name` in a point map you'll crash instead of doing anything useful.
+I have no idea how to test it other than the little program in `main.rs`. There's no UDP emitter implementation (just use TCP like you should anyway).
 
-The API for creating a point with custom fields could be nicer; would be great to hide the choice of `serde_json` from consumers.
+The API for creating a point with custom fields could be nicer; would be great to hide the choice of `serde_json` from consumers. The API above covers most of the metrics we typically emit from a service.
 
 ## License
 
