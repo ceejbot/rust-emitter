@@ -13,7 +13,8 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::sync::Mutex;
 
-lazy_static! {
+lazy_static!
+{
     pub static ref EMITTER: Mutex<Emitter<'static>> = Mutex::new(Emitter::empty());
 }
 
@@ -89,7 +90,7 @@ impl<'e> Emitter<'e>
     {
         match self.output
         {
-            None => {},
+            None => { },
             Some(ref mut conn) =>
             {
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
@@ -107,8 +108,12 @@ impl<'e> Emitter<'e>
         let mut metric = self.defaults.clone();
         metric.append(&mut point.clone());
 
-        // this will fail if you forget to set a name
-        let name = metric.remove("name").unwrap();
+        // Failing to set a name means the metrics point is invalid; we decline to send it.
+        let name = match metric.remove("name")
+        {
+            Some(v) => v,
+            None => { return; },
+        };
         let mut fullname = self.app.clone();
         fullname.push_str(name.as_str().unwrap());
 
@@ -185,6 +190,7 @@ impl<'e> Emitter<'e>
 fn create_connection(dest: &str) -> Option<std::net::TcpStream>
 {
     // TODO udp vs tcp for full compatibility
+    // TODO reconnect on error
     let target = url::Url::parse(dest).ok().unwrap();
     match TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
     {
@@ -211,7 +217,8 @@ pub fn hostname<'a>() -> String
     let mut len = bufsize;
     let mut i = 0;
 
-    loop {
+    loop
+    {
         let byte = unsafe { *(((ptr as u64) + (i as u64)) as *const u8) };
         if byte == 0
         {
