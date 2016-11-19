@@ -33,4 +33,9 @@ fn main()
     emitter().connect("tcp://localhost:4677");
     emitter().emit_name("initialization");
     emitter().emit_name_int_tag_uint("response", 23, "status", 200);
+
+    println!("sleeping...");
+    std::thread::sleep(std::time::Duration::new(10, 0));
+    emitter().emit_name("postsleep");
+
 }

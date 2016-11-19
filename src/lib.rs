@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::sync::Mutex;
+use std::io;
 
 lazy_static!
 {
@@ -86,18 +87,45 @@ impl<'e> Emitter<'e>
         self.output = create_connection(dest);
     }
 
+    fn write_all(conn: &mut TcpStream, mut buf: &[u8]) -> Result<usize, io::Error>
+    {
+        let total = buf.len();
+        let mut written: usize = 0;
+
+        while !buf.is_empty()
+        {
+            match conn.write(buf)
+            {
+                Ok(0) => return Err(io::Error::new(io::ErrorKind::Other, "zero bytes written")),
+                Ok(n) => {
+                    // println!("bytes={} of {}", n, total);
+                    written += n;
+                    buf = &buf[n..]
+                },
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(written)
+    }
+
     fn write(&mut self, metric: BTreeMap<&'e str, Value>)
     {
         match self.output
         {
-            None => { },
+            None => { self.output = create_connection(&self.destination); },
+            Some(_) => {},
+        };
+
+        match self.output
+        {
+            None => {},
             Some(ref mut conn) =>
             {
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
-                match conn.write_all(mline.as_bytes())
+                match Emitter::write_all(conn, mline.as_bytes())
                 {
-                    Ok(_) => {},
-                    Err(e) => println!("{:?}", e),
+                    Ok(v) => println!("OK {:?}", v),
+                    Err(e) => println!("ERR {:?}", e),
                 }
             }
         }
