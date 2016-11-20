@@ -124,7 +124,7 @@ impl<'e> Emitter<'e>
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
                 match Emitter::write_all(conn, mline.as_bytes())
                 {
-                    Ok(v) => println!("OK {:?}", v),
+                    Ok(_) => {},
                     Err(e) => println!("ERR {:?}", e),
                 }
             }
