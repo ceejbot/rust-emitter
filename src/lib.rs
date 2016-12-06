@@ -206,6 +206,14 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
+    pub fn emit_double(&mut self, name: &'e str, value: f64)
+    {
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        metric.insert("value", serde_json::to_value(value));
+        self.emit(metric);
+    }
+
     pub fn emit_int(&mut self, name: &'e str, value: i32)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();

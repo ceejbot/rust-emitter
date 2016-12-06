@@ -90,8 +90,9 @@ Emit a full numbat metric, with as many tags as you wish. The `time` and `value`
 Shortcut for emitting a metric with value 1.
 
 `emit_float(&str, f32)`
+`emit_double(&str, f64)`
 
-Shortcut for emitting a metric with the given name and floating-point value.
+Shortcuts for emitting a metric with the given name and floating-point value.
 
 `emit_int(&str, i32)`  
 `emit_int64(&mut self, name: &'e str, value: i64)`  
