@@ -50,6 +50,24 @@ impl<'e> Emitter<'e>
         }
     }
 
+    pub fn for_app(app: &str) -> Emitter<'e>
+    {
+        let mut opts: Point = Point::new();
+        let hostname = hostname();
+        opts.insert("host", serde_json::to_value(hostname));
+
+        let mut t = String::from(app);
+        t.push('.');
+
+        Emitter
+        {
+            defaults: opts,
+            output: None,
+            app: t,
+            destination: String::from("")
+        }
+    }
+
     pub fn init(&mut self, tmpl: BTreeMap<&'e str, Value>, app: &str)
     {
         let mut defaults = tmpl.clone();
@@ -261,13 +279,17 @@ pub fn hostname<'a>() -> String
     String::from_utf8_lossy(buf.as_slice()).into_owned()
 }
 
-impl<'e> Clone for Emitter<'e> {
-    fn clone(&self) -> Self {
-        Emitter {
+impl<'e> Clone for Emitter<'e>
+{
+    fn clone(&self) -> Self
+    {
+        Emitter
+        {
             defaults: self.defaults.clone(),
             destination: self.destination.clone(),
             app: self.app.clone(),
-            output: match self.output {
+            output: match self.output
+            {
                 None => None,
                 Some(ref o) => Some(o.try_clone().expect("expected TcpStream to clone"))
             }

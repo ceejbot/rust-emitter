@@ -9,10 +9,7 @@ fn main()
     println!("found the hostname: {}", numbat::hostname());
 
     // Create a local emitter & use it.
-    let mut opts: Point = Point::new();
-    opts.insert("tag", serde_json::to_value("local"));
-
-    let mut custom = numbat::Emitter::new(opts, "numbat-emitter");
+    let mut custom = numbat::Emitter::for_app("numbat-emitter");
     custom.connect("tcp://localhost:4677");
 
     custom.emit_name("start");
@@ -25,6 +22,14 @@ fn main()
     point.insert("value", serde_json::to_value(500.3));
     custom.emit(point);
 
+    // Create a local emitter with default fields & use it.
+    let mut opts: Point = Point::new();
+    opts.insert("tag", serde_json::to_value("prefilled"));
+
+    let mut with_defaults = numbat::Emitter::new(opts, "numbat-emitter");
+    with_defaults.connect("tcp://localhost:4677");
+    with_defaults.emit_unsigned16("unsigned16", 256_u16);
+
     // Now initialize & use the global emitter.
     let mut opts2: Point = Point::new();
     opts2.insert("tag", serde_json::to_value("global"));
@@ -33,9 +38,4 @@ fn main()
     emitter().connect("tcp://localhost:4677");
     emitter().emit_name("initialization");
     emitter().emit_name_int_tag_uint("response", 23, "status", 200);
-
-    println!("sleeping...");
-    std::thread::sleep(std::time::Duration::new(10, 0));
-    emitter().emit_name("postsleep");
-
 }

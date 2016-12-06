@@ -57,15 +57,25 @@ Numbat points are BTreeMaps:
 
 `pub type Point<'a> = BTreeMap<&'a str, serde_json::Value>`
 
-### Functions
+### Creating an emitter
 
-`numbat::emitter()`
+`numbat::Emitter::for_app(app: &str) -> Emitter<'e>`
 
-Get the singleton emitter for use with any of the below functions (aside from `new()`).
+Probably the constructor you want to use most often if you're not setting up a global emitter *and* if you don't need default fields in every point. Just pass the app name & boom.
 
 `numbat::Emitter::new(tmpl: Point, app: &str)`
 
 Takes a template point with defaults to use for *all* emitted metrics (can be empty), and the name of the app. The name of the app *will* be used as a prefix for all emitted metrics. E.g., if your app is named `tiger` and you emit a metric with name field `bite`, it'll be sent to the collector as `tiger.bite`.
+
+`numbat::emitter()`
+
+Get the singleton emitter for use with any of the below functions.
+
+### Functions on an emitter
+
+`init(tmpl: BTreeMap<&'e str, Value>, app: &str)`
+
+Call this to set up the global emitter for use.
 
 `connect(uri: &str)`
 

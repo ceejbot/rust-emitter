@@ -1,6 +1,6 @@
 [package]
 name = "numbat"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["C J Silverio <ceejceej@gmail.com>"]
 description = "An emitter for npm's numbat-metrics for Rust projects."
 homepage = "https://github.com/numbat-metrics/rust-emitter"
