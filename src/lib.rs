@@ -198,7 +198,7 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
-    pub fn emit_float(&mut self, name: &'e str, value: f32)
+    pub fn emit_f32(&mut self, name: &'e str, value: f32)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
@@ -206,7 +206,7 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
-    pub fn emit_double(&mut self, name: &'e str, value: f64)
+    pub fn emit_f64(&mut self, name: &'e str, value: f64)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
@@ -214,7 +214,7 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
-    pub fn emit_int(&mut self, name: &'e str, value: i32)
+    pub fn emit_i32(&mut self, name: &'e str, value: i32)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
@@ -222,7 +222,7 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
-    pub fn emit_int64(&mut self, name: &'e str, value: i64)
+    pub fn emit_i64(&mut self, name: &'e str, value: i64)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
@@ -230,14 +230,20 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
-    pub fn emit_unsigned(&mut self, name: &'e str, value: u32)
+    pub fn emit_u32(&mut self, name: &'e str, value: u32)
     {
-        self.emit_int64(name, value as i64);
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        metric.insert("value", serde_json::to_value(value));
+        self.emit(metric);
     }
 
-    pub fn emit_unsigned16(&mut self, name: &'e str, value: u16)
+    pub fn emit_u16(&mut self, name: &'e str, value: u16)
     {
-        self.emit_int(name, value as i32);
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        metric.insert("value", serde_json::to_value(value));
+        self.emit(metric);
     }
 }
 

@@ -89,15 +89,15 @@ Emit a full numbat metric, with as many tags as you wish. The `time` and `value`
 
 Shortcut for emitting a metric with value 1.
 
-`emit_float(&str, f32)`
-`emit_double(&str, f64)`
+`emit_f32(&str, f32)`
+`emit_f64(&str, f64)`
 
 Shortcuts for emitting a metric with the given name and floating-point value.
 
-`emit_int(&str, i32)`  
-`emit_int64(&mut self, name: &'e str, value: i64)`  
-`emit_unsigned(&mut self, name: &'e str, value: u32)`  
-`emit_unsigned16(&mut self, name: &'e str, value: u16)`
+`emit_i32(&mut self, name: &'e str, value: i32)`  
+`emit_i64(&mut self, name: &'e str, value: i64)`  
+`emit_u32(&mut self, name: &'e str, value: u32)`  
+`emit_u16(&mut self, name: &'e str, value: u16)`
 
 Shortcuts for emitting a metric with the given name and integer value, with various signedness & size.
 
