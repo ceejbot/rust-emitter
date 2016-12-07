@@ -105,7 +105,7 @@ impl<'e> Emitter<'e>
         self.output = create_connection(dest);
     }
 
-    // The default write_all implemenation doesn't do useful things.
+    // The default write_all implementation doesn't do useful things.
     fn write_all(conn: &mut TcpStream, mut buf: &[u8]) -> Result<usize, io::Error>
     {
         // let total = buf.len();
@@ -149,7 +149,7 @@ impl<'e> Emitter<'e>
         }
     }
 
-    pub fn emit(&mut self, point: BTreeMap<&'e str, Value>)
+    pub fn emit_point(&mut self, point: BTreeMap<&'e str, Value>)
     {
         let mut metric = self.defaults.clone();
         metric.append(&mut point.clone());
@@ -173,86 +173,30 @@ impl<'e> Emitter<'e>
         self.write(metric);
     }
 
-    pub fn emit_name(&mut self, name: &'e str)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        self.emit(metric);
-    }
-
-    pub fn emit_value<T>(&mut self, name: &str, value: T)
+    pub fn emit<T>(&mut self, name: &str, value: T)
         where T: serde::ser::Serialize
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
+        self.emit_point(metric);
     }
 
-    pub fn emit_name_val_tag(&mut self, name: &'e str, value: u32, tag: &'e str, tagv: &'e str)
+    pub fn emit_name(&mut self, name: &'e str)
+    {
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        self.emit_point(metric);
+    }
+
+    pub fn emit_name_val_tag<T>(&mut self, name: &'e str, value: T, tag: &'e str, tagv: T)
+        where T: serde::ser::Serialize
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         metric.insert(tag, serde_json::to_value(tagv));
-        self.emit(metric);
-    }
-
-    pub fn emit_name_int_tag_uint(&mut self, name: &'e str, value: i64, tag: &'e str, tagv: u16)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        metric.insert(tag, serde_json::to_value(tagv));
-        self.emit(metric);
-    }
-
-    pub fn emit_f32(&mut self, name: &'e str, value: f32)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
-    }
-
-    pub fn emit_f64(&mut self, name: &'e str, value: f64)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
-    }
-
-    pub fn emit_i32(&mut self, name: &'e str, value: i32)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
-    }
-
-    pub fn emit_i64(&mut self, name: &'e str, value: i64)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
-    }
-
-    pub fn emit_u32(&mut self, name: &'e str, value: u32)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
-    }
-
-    pub fn emit_u16(&mut self, name: &'e str, value: u16)
-    {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
-        metric.insert("name", serde_json::to_value(name));
-        metric.insert("value", serde_json::to_value(value));
-        self.emit(metric);
+        self.emit_point(metric);
     }
 }
 
