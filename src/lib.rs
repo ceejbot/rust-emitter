@@ -180,6 +180,15 @@ impl<'e> Emitter<'e>
         self.emit(metric);
     }
 
+    pub fn emit_value<T>(&mut self, name: &str, value: T)
+        where T: serde::ser::Serialize
+    {
+        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        metric.insert("name", serde_json::to_value(name));
+        metric.insert("value", serde_json::to_value(value));
+        self.emit(metric);
+    }
+
     pub fn emit_name_val_tag(&mut self, name: &'e str, value: u32, tag: &'e str, tagv: &'e str)
     {
         let mut metric: BTreeMap<&str, Value> = BTreeMap::new();

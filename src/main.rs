@@ -13,7 +13,8 @@ fn main()
     custom.connect("tcp://localhost:4677");
 
     custom.emit_name("start");
-    custom.emit_f32("floating", 232.5);
+    custom.emit_value("floating", 232.5);
+    custom.emit_value("also-not-floating", "foo");
     custom.emit_i32("integer", 2048);
 
     let mut point: Point = Point::new();
