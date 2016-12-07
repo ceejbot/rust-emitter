@@ -38,12 +38,9 @@ impl<'e> Emitter<'e>
 {
     pub fn empty() -> Emitter<'e>
     {
-        let mut opts: Point = Point::new();
-        let hostname = hostname();
-        opts.insert("host", serde_json::to_value(hostname));
         Emitter
         {
-            defaults: opts,
+            defaults: get_defaults(Point::new()),
             output: None,
             app: String::from(""),
             destination: String::from("")
@@ -52,23 +49,19 @@ impl<'e> Emitter<'e>
 
     pub fn for_app(app: &str) -> Emitter<'e>
     {
-        let mut opts: Point = Point::new();
-        let hostname = hostname();
-        opts.insert("host", serde_json::to_value(hostname));
-
         let mut t = String::from(app);
         t.push('.');
 
         Emitter
         {
-            defaults: opts,
+            defaults: get_defaults(Point::new()),
             output: None,
             app: t,
             destination: String::from("")
         }
     }
 
-    pub fn init(&mut self, tmpl: BTreeMap<&'e str, Value>, app: &str)
+    pub fn init(&mut self, tmpl: Point<'e>, app: &str)
     {
         let mut defaults = tmpl.clone();
         let hostname = hostname();
@@ -81,7 +74,7 @@ impl<'e> Emitter<'e>
         self.app = t;
     }
 
-    pub fn new(tmpl: BTreeMap<&'e str, Value>, app: &str) -> Emitter<'e>
+    pub fn new(tmpl: Point<'e>, app: &str) -> Emitter<'e>
     {
         let mut defaults = tmpl.clone();
         let hostname = hostname();
@@ -92,7 +85,7 @@ impl<'e> Emitter<'e>
 
         Emitter
         {
-            defaults: defaults,
+            defaults: get_defaults(tmpl),
             output: None,
             app: t,
             destination: String::from("")
@@ -244,6 +237,12 @@ pub fn hostname<'a>() -> String
 
     unsafe { buf.set_len(len); }
     String::from_utf8_lossy(buf.as_slice()).into_owned()
+}
+
+fn get_defaults(tmpl: Point) -> Point {
+    let defaults = tmpl.clone();
+    defaults.insert("host", serde_json::to_value(hostname()));
+    defaults
 }
 
 impl<'e> Clone for Emitter<'e>
