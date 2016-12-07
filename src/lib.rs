@@ -7,7 +7,6 @@ extern crate time;
 extern crate url;
 
 use libc::gethostname;
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
@@ -38,12 +37,9 @@ impl<'e> Emitter<'e>
 {
     pub fn empty() -> Emitter<'e>
     {
-        let mut opts: Point = Point::new();
-        let hostname = hostname();
-        opts.insert("host", serde_json::to_value(hostname));
         Emitter
         {
-            defaults: opts,
+            defaults: get_defaults(Point::new()),
             output: None,
             app: String::from(""),
             destination: String::from("")
@@ -52,23 +48,10 @@ impl<'e> Emitter<'e>
 
     pub fn for_app(app: &str) -> Emitter<'e>
     {
-        let mut opts: Point = Point::new();
-        let hostname = hostname();
-        opts.insert("host", serde_json::to_value(hostname));
-
-        let mut t = String::from(app);
-        t.push('.');
-
-        Emitter
-        {
-            defaults: opts,
-            output: None,
-            app: t,
-            destination: String::from("")
-        }
+        Self::new(Point::new(), app)
     }
 
-    pub fn init(&mut self, tmpl: BTreeMap<&'e str, Value>, app: &str)
+    pub fn init(&mut self, tmpl: Point<'e>, app: &str)
     {
         let mut defaults = tmpl.clone();
         let hostname = hostname();
@@ -81,7 +64,7 @@ impl<'e> Emitter<'e>
         self.app = t;
     }
 
-    pub fn new(tmpl: BTreeMap<&'e str, Value>, app: &str) -> Emitter<'e>
+    pub fn new(tmpl: Point<'e>, app: &str) -> Emitter<'e>
     {
         let mut defaults = tmpl.clone();
         let hostname = hostname();
@@ -92,7 +75,7 @@ impl<'e> Emitter<'e>
 
         Emitter
         {
-            defaults: defaults,
+            defaults: get_defaults(tmpl),
             output: None,
             app: t,
             destination: String::from("")
@@ -126,7 +109,7 @@ impl<'e> Emitter<'e>
         Ok(written)
     }
 
-    fn write(&mut self, metric: BTreeMap<&'e str, Value>)
+    fn write(&mut self, metric: Point)
     {
         match self.output
         {
@@ -149,7 +132,7 @@ impl<'e> Emitter<'e>
         }
     }
 
-    pub fn emit_point(&mut self, point: BTreeMap<&'e str, Value>)
+    pub fn emit_point(&mut self, point: Point)
     {
         let mut metric = self.defaults.clone();
         metric.append(&mut point.clone());
@@ -176,23 +159,23 @@ impl<'e> Emitter<'e>
     pub fn emit<T>(&mut self, name: &str, value: T)
         where T: serde::ser::Serialize
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         self.emit_point(metric);
     }
 
-    pub fn emit_name(&mut self, name: &'e str)
+    pub fn emit_name(&mut self, name: &str)
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         self.emit_point(metric);
     }
 
-    pub fn emit_name_val_tag<T>(&mut self, name: &'e str, value: T, tag: &'e str, tagv: T)
+    pub fn emit_name_val_tag<T>(&mut self, name: &str, value: T, tag: &str, tagv: T)
         where T: serde::ser::Serialize
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         metric.insert(tag, serde_json::to_value(tagv));
@@ -244,6 +227,12 @@ pub fn hostname<'a>() -> String
 
     unsafe { buf.set_len(len); }
     String::from_utf8_lossy(buf.as_slice()).into_owned()
+}
+
+fn get_defaults(tmpl: Point) -> Point {
+    let mut defaults = tmpl.clone();
+    defaults.insert("host", serde_json::to_value(hostname()));
+    defaults
 }
 
 impl<'e> Clone for Emitter<'e>
