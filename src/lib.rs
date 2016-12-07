@@ -7,7 +7,6 @@ extern crate time;
 extern crate url;
 
 use libc::gethostname;
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
@@ -119,7 +118,7 @@ impl<'e> Emitter<'e>
         Ok(written)
     }
 
-    fn write(&mut self, metric: BTreeMap<&'e str, Value>)
+    fn write(&mut self, metric: Point)
     {
         match self.output
         {
@@ -142,7 +141,7 @@ impl<'e> Emitter<'e>
         }
     }
 
-    pub fn emit_point(&mut self, point: BTreeMap<&'e str, Value>)
+    pub fn emit_point(&mut self, point: Point)
     {
         let mut metric = self.defaults.clone();
         metric.append(&mut point.clone());
@@ -169,23 +168,23 @@ impl<'e> Emitter<'e>
     pub fn emit<T>(&mut self, name: &str, value: T)
         where T: serde::ser::Serialize
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         self.emit_point(metric);
     }
 
-    pub fn emit_name(&mut self, name: &'e str)
+    pub fn emit_name(&mut self, name: &str)
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         self.emit_point(metric);
     }
 
-    pub fn emit_name_val_tag<T>(&mut self, name: &'e str, value: T, tag: &'e str, tagv: T)
+    pub fn emit_name_val_tag<T>(&mut self, name: &str, value: T, tag: &str, tagv: T)
         where T: serde::ser::Serialize
     {
-        let mut metric: BTreeMap<&str, Value> = BTreeMap::new();
+        let mut metric: Point = Point::new();
         metric.insert("name", serde_json::to_value(name));
         metric.insert("value", serde_json::to_value(value));
         metric.insert(tag, serde_json::to_value(tagv));
@@ -240,7 +239,7 @@ pub fn hostname<'a>() -> String
 }
 
 fn get_defaults(tmpl: Point) -> Point {
-    let defaults = tmpl.clone();
+    let mut defaults = tmpl.clone();
     defaults.insert("host", serde_json::to_value(hostname()));
     defaults
 }
