@@ -48,16 +48,7 @@ impl<'e> Emitter<'e>
 
     pub fn for_app(app: &str) -> Emitter<'e>
     {
-        let mut t = String::from(app);
-        t.push('.');
-
-        Emitter
-        {
-            defaults: get_defaults(Point::new()),
-            output: None,
-            app: t,
-            destination: String::from("")
-        }
+        Self::new(Point::new(), app)
     }
 
     pub fn init(&mut self, tmpl: Point<'e>, app: &str)
