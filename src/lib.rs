@@ -29,7 +29,7 @@ pub struct Emitter<'e>
 {
     defaults: Point<'e>,
     output: Result<TcpStream, Error>,
-    needs_reconnection: bool,
+    last_error: Option<Error>,
     destination: String,
     app: String,
 }
@@ -43,7 +43,7 @@ impl<'e> Emitter<'e>
             defaults: get_defaults(Point::new()),
             output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
             app: String::from(""),
-            needs_reconnection: true,
+            last_error: None,
             destination: String::from("")
         }
     }
@@ -80,16 +80,19 @@ impl<'e> Emitter<'e>
             defaults: get_defaults(tmpl),
             output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
             app: t,
-            needs_reconnection: true,
+            last_error: None,
             destination: String::from("")
         }
     }
 
+    fn take_error(&mut self) -> Option<Error> {
+        std::mem::replace(&mut self.last_error, None)
+    }
+
     fn get_connection(&mut self) -> &Result<TcpStream, Error>
     {
-        if !self.output.is_ok() || self.needs_reconnection {
+        if !self.output.is_ok() || self.take_error().is_some() {
             self.output = create_connection(&self.destination);
-            self.needs_reconnection = false;
         }
 
         &self.output
@@ -106,13 +109,17 @@ impl<'e> Emitter<'e>
         self.get_connection();
 
         match self.output {
-            Err(_) => { self.needs_reconnection = true; },
+            Err(ref e) => {
+                self.last_error = Some(clone_error(e));
+            },
             Ok(ref mut conn) => {
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
                 match conn.write(mline.as_bytes())
                 {
                     Ok(_) => {},
-                    Err(_) => { self.needs_reconnection = true; }
+                    Err(ref e) => {
+                        self.last_error = Some(clone_error(e));
+                    }
                 }
             }
         }
@@ -217,6 +224,11 @@ fn get_defaults(tmpl: Point) -> Point {
     defaults
 }
 
+fn clone_error(e: &Error) -> Error {
+    Error::new((*e).kind(), "cloned error")
+}
+
+
 impl<'e> Clone for Emitter<'e>
 {
     fn clone(&self) -> Self
@@ -228,10 +240,14 @@ impl<'e> Clone for Emitter<'e>
             app: self.app.clone(),
             output: match self.output
             {
-                Err(ref e) => Err(Error::new(e.kind(), "cloned error")),
+                Err(ref e) => Err(clone_error(e)),
                 Ok(ref o) => o.try_clone()
             },
-            needs_reconnection: self.needs_reconnection.clone(),
+            last_error: match self.last_error
+            {
+                Some(ref e) => Some(clone_error(e)),
+                None => None
+            }
         }
     }
 }
