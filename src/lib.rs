@@ -85,13 +85,15 @@ impl<'e> Emitter<'e>
         }
     }
 
-    fn take_error(&mut self) -> Option<Error> {
+    fn take_error(&mut self) -> Option<Error>
+    {
         std::mem::replace(&mut self.last_error, None)
     }
 
     fn get_connection(&mut self) -> &Result<TcpStream, Error>
     {
-        if !self.output.is_ok() || self.take_error().is_some() {
+        if !self.output.is_ok() || self.take_error().is_some()
+        {
             self.output = create_connection(&self.destination);
         }
 
@@ -108,18 +110,16 @@ impl<'e> Emitter<'e>
     {
         self.get_connection();
 
-        match self.output {
-            Err(ref e) => {
-                self.last_error = Some(clone_error(e));
-            },
-            Ok(ref mut conn) => {
+        match self.output
+        {
+            Err(ref e) => { self.last_error = Some(clone_error(e)); },
+            Ok(ref mut conn) =>
+            {
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
                 match conn.write(mline.as_bytes())
                 {
                     Ok(_) => {},
-                    Err(ref e) => {
-                        self.last_error = Some(clone_error(e));
-                    }
+                    Err(ref e) => { self.last_error = Some(clone_error(e)); }
                 }
             }
         }
@@ -178,8 +178,6 @@ impl<'e> Emitter<'e>
 
 fn create_connection(dest: &str) -> Result<TcpStream, Error>
 {
-    // TODO udp vs tcp for full compatibility
-    // TODO reconnect on error
     let target = url::Url::parse(dest).ok().unwrap();
     TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
 }
@@ -218,16 +216,17 @@ pub fn hostname<'a>() -> String
     String::from_utf8_lossy(buf.as_slice()).into_owned()
 }
 
-fn get_defaults(tmpl: Point) -> Point {
+fn get_defaults(tmpl: Point) -> Point
+{
     let mut defaults = tmpl.clone();
     defaults.insert("host", serde_json::to_value(hostname()));
     defaults
 }
 
-fn clone_error(e: &Error) -> Error {
+fn clone_error(e: &Error) -> Error
+{
     Error::new((*e).kind(), "cloned error")
 }
-
 
 impl<'e> Clone for Emitter<'e>
 {
