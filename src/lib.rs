@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::sync::Mutex;
-use std::io;
+use std::io::{Error,ErrorKind};
 
 lazy_static!
 {
@@ -28,7 +28,8 @@ pub type Point<'a> = BTreeMap<&'a str, serde_json::Value>;
 pub struct Emitter<'e>
 {
     defaults: Point<'e>,
-    output: Option<TcpStream>,
+    output: Result<TcpStream, Error>,
+    last_error: Option<Error>,
     destination: String,
     app: String,
 }
@@ -40,8 +41,9 @@ impl<'e> Emitter<'e>
         Emitter
         {
             defaults: get_defaults(Point::new()),
-            output: None,
+            output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
             app: String::from(""),
+            last_error: None,
             destination: String::from("")
         }
     }
@@ -76,57 +78,48 @@ impl<'e> Emitter<'e>
         Emitter
         {
             defaults: get_defaults(tmpl),
-            output: None,
+            output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
             app: t,
+            last_error: None,
             destination: String::from("")
         }
+    }
+
+    fn take_error(&mut self) -> Option<Error> {
+        std::mem::replace(&mut self.last_error, None)
+    }
+
+    fn get_connection(&mut self) -> &Result<TcpStream, Error>
+    {
+        if !self.output.is_ok() || self.take_error().is_some() {
+            self.output = create_connection(&self.destination);
+        }
+
+        &self.output
     }
 
     pub fn connect(&mut self, dest: &str)
     {
         self.destination = String::from(dest);
-        self.output = create_connection(dest);
-    }
-
-    // The default write_all implementation doesn't do useful things.
-    fn write_all(conn: &mut TcpStream, mut buf: &[u8]) -> Result<usize, io::Error>
-    {
-        // let total = buf.len();
-        let mut written: usize = 0;
-        while !buf.is_empty()
-        {
-            match conn.write(buf)
-            {
-                Ok(0) => return Err(io::Error::new(io::ErrorKind::Other, "zero bytes written")),
-                Ok(n) => {
-                    // println!("bytes={} of {}", n, total);
-                    written += n;
-                    buf = &buf[n..]
-                },
-                Err(e) => return Err(e),
-            }
-        }
-        Ok(written)
+        self.get_connection();
     }
 
     fn write(&mut self, metric: Point)
     {
-        match self.output
-        {
-            None => { self.output = create_connection(&self.destination); },
-            Some(_) => {},
-        };
+        self.get_connection();
 
-        match self.output
-        {
-            None => {},
-            Some(ref mut conn) =>
-            {
+        match self.output {
+            Err(ref e) => {
+                self.last_error = Some(clone_error(e));
+            },
+            Ok(ref mut conn) => {
                 let mline = serde_json::to_string(&metric).unwrap() + "\n";
-                match Emitter::write_all(conn, mline.as_bytes())
+                match conn.write(mline.as_bytes())
                 {
                     Ok(_) => {},
-                    Err(e) => println!("ERR {:?}", e),
+                    Err(ref e) => {
+                        self.last_error = Some(clone_error(e));
+                    }
                 }
             }
         }
@@ -183,16 +176,12 @@ impl<'e> Emitter<'e>
     }
 }
 
-fn create_connection(dest: &str) -> Option<std::net::TcpStream>
+fn create_connection(dest: &str) -> Result<TcpStream, Error>
 {
     // TODO udp vs tcp for full compatibility
     // TODO reconnect on error
     let target = url::Url::parse(dest).ok().unwrap();
-    match TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
-    {
-        Ok(v) => { Some(v) },
-        Err(_) => { None },
-    }
+    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
 }
 
 pub fn hostname<'a>() -> String
@@ -235,6 +224,11 @@ fn get_defaults(tmpl: Point) -> Point {
     defaults
 }
 
+fn clone_error(e: &Error) -> Error {
+    Error::new((*e).kind(), "cloned error")
+}
+
+
 impl<'e> Clone for Emitter<'e>
 {
     fn clone(&self) -> Self
@@ -246,8 +240,13 @@ impl<'e> Clone for Emitter<'e>
             app: self.app.clone(),
             output: match self.output
             {
-                None => None,
-                Some(ref o) => Some(o.try_clone().expect("expected TcpStream to clone"))
+                Err(ref e) => Err(clone_error(e)),
+                Ok(ref o) => o.try_clone()
+            },
+            last_error: match self.last_error
+            {
+                Some(ref e) => Some(clone_error(e)),
+                None => None
             }
         }
     }
