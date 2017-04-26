@@ -10,7 +10,7 @@ fn main()
 
     // Create a local emitter & use it.
     let mut custom = numbat::Emitter::for_app("numbat-emitter");
-    custom.connect("tcp://localhost:4677");
+    custom.connect("http://localhost:4151/pub?topic=rust");
 
     custom.emit_name("start");
     custom.emit("floating", 232.5);
@@ -28,7 +28,7 @@ fn main()
     opts.insert("tag", serde_json::to_value("prefilled"));
 
     let mut with_defaults = numbat::Emitter::new(opts, "numbat-emitter");
-    with_defaults.connect("tcp://localhost:4677");
+    with_defaults.connect("nsq://localhost:4151/pub?topic=rust");
     with_defaults.emit("unsigned16", 256_u16);
 
     // Now initialize & use the global emitter.
@@ -36,7 +36,7 @@ fn main()
     opts2.insert("tag", serde_json::to_value("global"));
 
     emitter().init(opts2, "numbat-emitter");
-    emitter().connect("tcp://localhost:4677");
+    emitter().connect("nsq://localhost:4151/pub?topic=rust");
     emitter().emit_name("initialization");
     emitter().emit_name_val_tag("response", 23, "status", 200);
 }

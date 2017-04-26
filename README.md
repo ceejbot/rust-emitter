@@ -15,7 +15,7 @@ extern crate serde_json;
 use numbat::Point;
 
 let mut emitter = numbat::Emitter::for_app("test-emitter");
-emitter.connect("tcp://localhost:4677");
+emitter.connect("nsq://localhost:4151/pub?topic=metrics");
 
 emitter.emit_name("start"); // default value is 1
 emitter.emit("floating", 232.5);
@@ -29,7 +29,7 @@ point.insert("value", serde_json::to_value(500.3));
 emitter.emit_point(point);
 ```
 
-However, it might be a giant pain to pass an emitter object around. If you need only one, connected to only one numbat collector, you can use the singleton:
+However, it might be a giant pain to pass an emitter object around. If you need only one, posting to only one destination, you can use the singleton:
 
 ```rust
 extern crate numbat;
@@ -41,7 +41,7 @@ let mut defaults: Point = Point::new();
 defaults.insert("using_emitter", serde_json::to_value("global"));
 
 numbat::emitter().init(defaults, "global-emitter");
-numbat::emitter().connect("tcp://localhost:4677");
+numbat::emitter().connect("nsq://localhost:4151/pub?topic=global-metrics");
 numbat::emitter().emit_name("start");
 ```
 
@@ -75,7 +75,7 @@ Call this to set up the global emitter for use.
 
 `connect(uri: &str)`
 
-You must call this before your metrics go anywhere. Takes a URI of the form `tcp://hostname:portnum`. Everything is treated as TCP at the moment, so udp numbat collectors are useless with this library.
+You must call this before your metrics go anywhere. Accepts any valid URI; will post directly to that URI. The only processing done is to replace an initial `nsq` with `http`, so you may pass in `nsq://localhost:4151/` if you wish.
 
 `emit(mut Point)`
 
@@ -95,12 +95,9 @@ Shortcut for another common pattern: a name/value pair with a tag/value pair. He
 
 `emit_name_val_tag("response", 23, "status", 200);`
 
-
 ## TODO
 
-There's no error handling to speak of yet. It won't crash on errors, but it doesn't try to reconnect if it loses a connection. (I'm slowly untangling if/when the Rust TCPStream implementation bubbles errors up.)
-
-I have no idea how to test it other than the little program in `main.rs`. There's no UDP emitter implementation (just use TCP like you should anyway).
+Testing.
 
 ## License
 
