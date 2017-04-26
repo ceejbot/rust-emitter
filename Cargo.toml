@@ -1,6 +1,6 @@
 [package]
 name = "numbat"
-version = "0.3.0"
+version = "1.0.0"
 authors = ["C J Silverio <ceejceej@gmail.com>"]
 description = "An emitter for npm's numbat-metrics for Rust projects."
 homepage = "https://github.com/numbat-metrics/rust-emitter"
@@ -9,9 +9,10 @@ license = "ISC"
 readme = "README.md"
 
 [dependencies]
+hyper = "0.10"
 lazy_static = "0.1.0"
 libc = "0.2.17"
+regex = "0.2"
 serde = "0.8"
 serde_json = "0.8"
 time = "0.1"
-url = "1.2.2"

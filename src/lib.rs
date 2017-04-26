@@ -1,17 +1,17 @@
 #[macro_use]
 extern crate lazy_static;
+extern crate hyper;
 extern crate libc;
+extern crate regex;
 extern crate serde;
 extern crate serde_json;
 extern crate time;
-extern crate url;
 
+use hyper::Client;
 use libc::gethostname;
+use regex::Regex;
 use std::collections::BTreeMap;
-use std::io::prelude::*;
-use std::net::TcpStream;
 use std::sync::Mutex;
-use std::io::{Error,ErrorKind};
 
 lazy_static!
 {
@@ -28,9 +28,8 @@ pub type Point<'a> = BTreeMap<&'a str, serde_json::Value>;
 pub struct Emitter<'e>
 {
     defaults: Point<'e>,
-    output: Result<TcpStream, Error>,
-    last_error: Option<Error>,
-    destination: String,
+    client: Client,
+    target: String,
     app: String,
 }
 
@@ -41,16 +40,22 @@ impl<'e> Emitter<'e>
         Emitter
         {
             defaults: get_defaults(Point::new()),
-            output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
+            client: Client::new(),
             app: String::from(""),
-            last_error: None,
-            destination: String::from("")
+            target: String::from("http://localhost:4151/pub?topic=metrics")
         }
     }
 
     pub fn for_app(app: &str) -> Emitter<'e>
     {
         Self::new(Point::new(), app)
+    }
+
+    pub fn connect(&mut self, target: &str)
+    {
+        let re = Regex::new(r"^nsq://").unwrap();
+        let result = re.replace(target, "http://");
+        self.target = result.into_owned();
     }
 
     pub fn init(&mut self, tmpl: Point<'e>, app: &str)
@@ -78,50 +83,19 @@ impl<'e> Emitter<'e>
         Emitter
         {
             defaults: get_defaults(tmpl),
-            output: Err(Error::new(ErrorKind::NotConnected, "not connected")),
+            client: Client::new(),
             app: t,
-            last_error: None,
-            destination: String::from("")
+            target: String::from("http://localhost:4151/pub?topic=metrics")
         }
-    }
-
-    fn take_error(&mut self) -> Option<Error> {
-        std::mem::replace(&mut self.last_error, None)
-    }
-
-    fn get_connection(&mut self) -> &Result<TcpStream, Error>
-    {
-        if !self.output.is_ok() || self.take_error().is_some() {
-            self.output = create_connection(&self.destination);
-        }
-
-        &self.output
-    }
-
-    pub fn connect(&mut self, dest: &str)
-    {
-        self.destination = String::from(dest);
-        self.get_connection();
     }
 
     fn write(&mut self, metric: Point)
     {
-        self.get_connection();
-
-        match self.output {
-            Err(ref e) => {
-                self.last_error = Some(clone_error(e));
-            },
-            Ok(ref mut conn) => {
-                let mline = serde_json::to_string(&metric).unwrap() + "\n";
-                match conn.write(mline.as_bytes())
-                {
-                    Ok(_) => {},
-                    Err(ref e) => {
-                        self.last_error = Some(clone_error(e));
-                    }
-                }
-            }
+        let mline = serde_json::to_string(&metric).unwrap();
+        match self.client.post(&self.target).body(&mline).send()
+        {
+            Ok(_) => { return; }, // we don't care!
+            Err(e) => { println!("{}", e); }, // bummer, man, but we still don't care
         }
     }
 
@@ -176,14 +150,6 @@ impl<'e> Emitter<'e>
     }
 }
 
-fn create_connection(dest: &str) -> Result<TcpStream, Error>
-{
-    // TODO udp vs tcp for full compatibility
-    // TODO reconnect on error
-    let target = url::Url::parse(dest).ok().unwrap();
-    TcpStream::connect((target.host_str().unwrap(), target.port().unwrap()))
-}
-
 pub fn hostname<'a>() -> String
 {
     let bufsize = 255;
@@ -218,16 +184,12 @@ pub fn hostname<'a>() -> String
     String::from_utf8_lossy(buf.as_slice()).into_owned()
 }
 
-fn get_defaults(tmpl: Point) -> Point {
+fn get_defaults(tmpl: Point) -> Point
+{
     let mut defaults = tmpl.clone();
     defaults.insert("host", serde_json::to_value(hostname()));
     defaults
 }
-
-fn clone_error(e: &Error) -> Error {
-    Error::new((*e).kind(), "cloned error")
-}
-
 
 impl<'e> Clone for Emitter<'e>
 {
@@ -236,18 +198,9 @@ impl<'e> Clone for Emitter<'e>
         Emitter
         {
             defaults: self.defaults.clone(),
-            destination: self.destination.clone(),
+            target: self.target.clone(),
             app: self.app.clone(),
-            output: match self.output
-            {
-                Err(ref e) => Err(clone_error(e)),
-                Ok(ref o) => o.try_clone()
-            },
-            last_error: match self.last_error
-            {
-                Some(ref e) => Some(clone_error(e)),
-                None => None
-            }
+            client: Client::new(),
         }
     }
 }
