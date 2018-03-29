@@ -95,7 +95,7 @@ impl<'e> Emitter<'e>
         match self.client.post(&self.target).body(&mline).send()
         {
             Ok(_) => { return; }, // we don't care!
-            Err(e) => { println!("{}", e); }, // bummer, man, but we still don't care
+            Err(e) => { println!("numbat error: {}", e); }, // bummer, man, but we still don't care
         }
     }
 
